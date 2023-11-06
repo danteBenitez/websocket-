@@ -1,0 +1,14 @@
+.author {
+    width: 100%;
+    display: block;
+    font-family: 'Inter';
+    font-weight: 600;
+}
+
+#messages li {
+    padding: 0.4rem;
+}
+
+.self {
+    background-color: bisque;
+}
