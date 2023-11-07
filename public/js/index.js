@@ -4,8 +4,10 @@ const form = document.querySelector("form");
 const input = form.querySelector("input");
 const messages = document.querySelector("#messages");
 const typingText = document.querySelector("#typing");
+const changeName = document.querySelector("#change-username");
+const user = document.querySelector(".user");
 
-let username = "";
+let username = "Usuario desconocido";
 
 input.addEventListener("keydown", () => {
     socket.emit("typing", username);
@@ -29,17 +31,20 @@ socket.on("quit typing", (author) => {
    }
 });
 
-Swal.fire({
-  title: "Ingrese su nombre de usuario",
-  html: `
-        <input type="text" id="username" /> 
-    `,
-  confirmButtonText: "Enviar",
-}).then(() => {
-  const usernameInput = document.querySelector("#username");
-  username = usernameInput.value;
-  socket.emit("join");
-});
+changeName.addEventListener('click', () => {
+  Swal.fire({
+    title: "Ingrese su nombre de usuario",
+    html: `
+          <input type="text" id="username" placeholder="test-name" class="form-control" /> 
+      `,
+    confirmButtonText: "Enviar",
+  }).then(() => {
+    const usernameInput = document.querySelector("#username");
+    username = usernameInput.value;
+    user.querySelector('p').textContent = username;
+    socket.emit("join");
+  });
+})
 
 form.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -64,7 +69,7 @@ function renderAllMessages(messageList) {
     .map(
       (msg) =>
         `
-        <li class="${msg.author == username ? "self" : ""}">
+        <li class="${msg.author == username ? "self" : ""} shadow">
             <span class="author">
                ${msg.author}  
             </span>

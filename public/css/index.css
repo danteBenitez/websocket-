@@ -1,3 +1,60 @@
+@font-face {
+    font-family: 'Inter';
+    src: 
+        url('/assets/fonts/inter/Inter-Regular.ttf');
+    font-weight: 600, 700;
+}
+
+:root {
+    min-height: 100vh;
+
+    --clr-accent-blue: #0d6efd;
+    --clr-gray-secondary: #e6e0e0d8;
+}
+
+body {
+    min-height: 100vh;
+    padding: 0;
+
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+.chat-layout {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: 1fr auto;
+    grid-template-areas: 
+        'sidebar messages'
+        'input input';
+}
+
+@media (max-width: 768px) {
+    .chat-layout {
+        grid-template-rows: 1fr auto;
+        grid-template-columns: 1fr;
+        grid-template-areas: 
+            'sidebar sidebar'
+            'messages messages'
+            'input input';
+    }
+}
+
+
+.chat-screen {
+    min-height: 100%;
+    min-width: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    grid-template-columns: 100%;
+}
+
+@media (max-width: 578px) {
+    .chat-screen {
+        grid-template-columns: 1fr;
+    }
+}
+
+
 .author {
     width: 100%;
     display: block;
@@ -5,10 +62,50 @@
     font-weight: 600;
 }
 
-#messages li {
-    padding: 0.4rem;
+#messages {
+    min-height: 90vh;
 }
 
-.self {
-    background-color: bisque;
+#messages li {
+    grid-area: messages;
+    padding: 0.6rem;
+    background-color: var(--clr-accent-blue);
+    color: #f0f0f0;
+    max-width: 60%;
+    margin: 1.1rem;
+
+    margin-inline-end: auto;
+    margin-inline-start: 0;
+    border-radius: 0.4rem;
+}
+
+.typing {
+    font-family: 'Inter';
+    margin-top: auto;
+}
+
+#messages .self {
+    background-color: var(--clr-gray-secondary);
+    margin-inline-start: auto;
+    margin-inline-end: 0;
+    color: black;
+}
+
+.avatar {
+    max-width: 4rem;
+}
+
+.change-name {
+    height: 2.4rem;
+    font-weight: 800;
+    font-size: 0.2rem;
+}
+
+.sidebar {
+    grid-area: sidebar;
+}
+
+#form {
+    grid-row: 3 / 2;
+    grid-column: 1 / 3;
 }
