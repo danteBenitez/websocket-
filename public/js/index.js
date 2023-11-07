@@ -9,16 +9,19 @@ const user = document.querySelector(".user");
 
 let username = "Usuario desconocido";
 
+let timer = null;
 input.addEventListener("keydown", () => {
-    socket.emit("typing", username);
-});
-input.addEventListener("keyup", () => {
+  socket.emit("typing", username);
+  clearTimeout(timer);
+  timer = setTimeout(() => {
     socket.emit("quit typing", username);
-})
+  }, 500);
+});
+
+socket.emit("join");
 
 socket.on("typing", (author) => {
-    console.log(`${author} comenzó a escribir...`);
-    typingText.innerHTML = `
+  typingText.innerHTML = `
         <p>
             ${author} está escribiendo.
         </p>
@@ -26,12 +29,12 @@ socket.on("typing", (author) => {
 });
 
 socket.on("quit typing", (author) => {
-   if (typingText.textContent.includes(author)) {
+  if (typingText.textContent.includes(author)) {
     typingText.innerHTML = "";
-   }
+  }
 });
 
-changeName.addEventListener('click', () => {
+changeName.addEventListener("click", () => {
   Swal.fire({
     title: "Ingrese su nombre de usuario",
     html: `
@@ -40,11 +43,10 @@ changeName.addEventListener('click', () => {
     confirmButtonText: "Enviar",
   }).then(() => {
     const usernameInput = document.querySelector("#username");
-    username = usernameInput.value;
-    user.querySelector('p').textContent = username;
-    socket.emit("join");
+    username = usernameInput.value.length != 0 ? usernameInput.value : username;
+    user.querySelector("p").textContent = username;
   });
-})
+});
 
 form.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -66,17 +68,7 @@ form.addEventListener("submit", (e) => {
 
 function renderAllMessages(messageList) {
   messages.innerHTML = messageList
-    .map(
-      (msg) =>
-        `
-        <li class="${msg.author == username ? "self" : ""} shadow">
-            <span class="author">
-               ${msg.author}  
-            </span>
-            ${msg.message}
-        </li> 
-        `
-    )
+    .map((msg) => renderMessage(msg, msg.author == username))
     .join("");
 }
 
@@ -85,17 +77,23 @@ socket.on("all messages", (messageList) => {
   console.log(messageList);
 });
 
-console.log(socket.on);
-
 socket.on("message", (data) => addMessage(data, false));
 
 function addMessage(data, self) {
-  messages.innerHTML += `
-        <li class="${self ? "self" : ""}">
+  messages.innerHTML += renderMessage(data, self);
+  messages.scrollBy({
+    behavior: 'smooth',
+    top: messages.scrollHeight
+  })
+}
+
+function renderMessage(data, self) {
+  return `
+        <li class="${self ? "self" : ""} shadow-sm">
             <span class="author">
                ${data.author}  
             </span>
             ${data.message}
         </li> 
-    `;
+  `;
 }

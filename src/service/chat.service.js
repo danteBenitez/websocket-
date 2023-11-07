@@ -1,7 +1,7 @@
 // @ts-check
-import { Server } from 'socket.io';
+import { Server } from "socket.io";
 
-import { roomModel } from '../models/rooms.model.js';
+import { roomModel } from "../models/rooms.model.js";
 
 /**
  * Servicio que maneja salas de chats como
@@ -15,13 +15,12 @@ class ChatService {
   constructor(roomModel, io) {
     this.roomModel = roomModel;
     this.server = io;
-
   }
 
   /**
    * Comienza la escucha de conexiones
    */
-  run() {
+  async run() {
     this.server.on("connection", this.getConnectionHandler());
   }
 
@@ -41,11 +40,12 @@ class ChatService {
   getConnectionHandler() {
     /** @param {import('socket.io').Socket} socket */
     return (socket) => {
-      
       // Evento de unirse a una sala de chat
-      socket.on("join", (roomId) => {
+      socket.on("join", (roomId = 0) => {
+        // Si no se pasa ningún ID de sala,
+        // se une a la sala de ID 0
         const room = this.roomModel.findById(roomId);
-        if (!room) return;
+        if (roomId && !room) return;
         socket.join(roomId);
         this.server.emit(
           "all messages",
@@ -63,7 +63,7 @@ class ChatService {
       });
 
       // Evento de mensajes
-      socket.on("message", (data, roomId) => {
+      socket.on("message", (data, roomId = 0) => {
         const message = {
           author: data.author,
           message: data.message,
@@ -82,13 +82,13 @@ class ChatService {
 
 /**
  * Retorna un nuevo servicio de chat con el servidor
- * HTTP especificado. 
- * 
- * @param {import('http').Server} httpServer 
+ * HTTP especificado.
+ *
+ * @param {import('http').Server} httpServer
  * @returns {ChatService}
  */
 
 export function chatServerFrom(httpServer) {
-    const io = new Server(httpServer);
-    return new ChatService(roomModel, io);
+  const io = new Server(httpServer);
+  return new ChatService(roomModel, io);
 }
