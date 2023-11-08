@@ -3,7 +3,7 @@
 import { messageModel } from './message.model.js';
 
 /**
- * Salas de chat de la aplicación
+ * Salas de chat de la aplicación.
  * Cada sala tiene un identificador, un nombre
  * y consta de un conjunto de mensajes enviados.
  * @typedef {object} Room
@@ -30,7 +30,7 @@ export class RoomModel {
     /**
      * Crea una sala de chat
      * 
-     * @param {{ id: number, name: string }} param0 
+     * @param {{ id: number, name: string }} roomData
      */
     create({ id, name }) {
         this.rooms.push({

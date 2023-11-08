@@ -6,19 +6,29 @@ const messages = document.querySelector("#messages");
 const typingText = document.querySelector("#typing");
 const changeName = document.querySelector("#change-username");
 const user = document.querySelector(".user");
+const rooms = document.querySelector("#rooms");
 
 let username = "Usuario desconocido";
 
-input.addEventListener("keydown", () => {
-    socket.emit("typing", username);
+document.addEventListener("DOMContentLoaded", () => {
+  socket.emit("get available rooms");
 });
-input.addEventListener("keyup", () => {
-    socket.emit("quit typing", username);
-})
+
+let timer = null;
+input.addEventListener("keydown", () => {
+  socket.emit("typing", username, currentRoomId);
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    socket.emit("quit typing", username, currentRoomId);
+  }, 500);
+});
+
+let currentRoomId = 0;
+
+socket.emit("join", 0);
 
 socket.on("typing", (author) => {
-    console.log(`${author} comenzó a escribir...`);
-    typingText.innerHTML = `
+  typingText.innerHTML = `
         <p>
             ${author} está escribiendo.
         </p>
@@ -26,12 +36,12 @@ socket.on("typing", (author) => {
 });
 
 socket.on("quit typing", (author) => {
-   if (typingText.textContent.includes(author)) {
+  if (typingText.textContent.includes(author)) {
     typingText.innerHTML = "";
-   }
+  }
 });
 
-changeName.addEventListener('click', () => {
+changeName.addEventListener("click", () => {
   Swal.fire({
     title: "Ingrese su nombre de usuario",
     html: `
@@ -40,11 +50,10 @@ changeName.addEventListener('click', () => {
     confirmButtonText: "Enviar",
   }).then(() => {
     const usernameInput = document.querySelector("#username");
-    username = usernameInput.value;
-    user.querySelector('p').textContent = username;
-    socket.emit("join");
+    username = usernameInput.value.length != 0 ? usernameInput.value : username;
+    user.querySelector("p").textContent = username;
   });
-})
+});
 
 form.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -52,7 +61,7 @@ form.addEventListener("submit", (e) => {
     socket.emit("message", {
       message: input.value,
       author: username,
-    });
+    }, currentRoomId);
     addMessage(
       {
         author: username,
@@ -66,17 +75,7 @@ form.addEventListener("submit", (e) => {
 
 function renderAllMessages(messageList) {
   messages.innerHTML = messageList
-    .map(
-      (msg) =>
-        `
-        <li class="${msg.author == username ? "self" : ""} shadow">
-            <span class="author">
-               ${msg.author}  
-            </span>
-            ${msg.message}
-        </li> 
-        `
-    )
+    .map((msg) => renderMessage(msg, msg.author == username))
     .join("");
 }
 
@@ -85,18 +84,59 @@ socket.on("all messages", (messageList) => {
   console.log(messageList);
 });
 
-console.log(socket.on);
-
 socket.on("message", (data) => addMessage(data, false));
 
 function addMessage(data, self) {
+  messages.innerHTML += renderMessage(data, self);
+  messages.scrollBy({
+    behavior: "smooth",
+    top: messages.scrollHeight,
+  });
+}
+
+function renderMessage(data, self) {
   const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  messages.innerHTML += `
-        <li class="${self ? "self" : ""}" >
+  return `
+        <li class="${self ? "self" : ""} shadow-sm">
             <span class="author">
                ${data.author}  
             </span>
             ${data.message}     ${time}
         </li> 
-    `;
+  `;
 }
+
+function setRoomId(roomId) {
+  // Dejar la sala actual
+  socket.emit("leave", currentRoomId);
+  currentRoomId = roomId;
+  // Unirse a la sala establecida
+  socket.emit("join", currentRoomId);
+
+  // Actualizar las salas disponibles
+  socket.emit("get available rooms");
+}
+
+function renderAvailableRooms(rooms) {
+  return rooms
+    .map(
+      (room) => `
+  <div class="list-group list-group-flush border-bottom scrollarea">
+  <a href="#" class="list-group-item list-group-item-action ${
+    currentRoomId == room.id ? "active" : ""
+  } py-3 lh-sm" 
+     onclick="setRoomId(${room.id})"
+     aria-current="true">
+    <div class="d-flex w-100 align-items-center justify-content-between">
+      <strong class="mb-1">${room.name}</strong>
+    </div>
+  </a>
+</div> 
+  `
+    )
+    .join("");
+}
+
+socket.on("available rooms", (roomData) => {
+  rooms.innerHTML = renderAvailableRooms(roomData);
+});

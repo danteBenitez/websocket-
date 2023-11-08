@@ -1,7 +1,7 @@
 // @ts-check
-import { Server } from 'socket.io';
+import { Server } from "socket.io";
 
-import { roomModel } from '../models/rooms.model.js';
+import { roomModel } from "../models/rooms.model.js";
 
 /**
  * Servicio que maneja salas de chats como
@@ -15,13 +15,12 @@ class ChatService {
   constructor(roomModel, io) {
     this.roomModel = roomModel;
     this.server = io;
-
   }
 
   /**
    * Comienza la escucha de conexiones
    */
-  run() {
+  async run() {
     this.server.on("connection", this.getConnectionHandler());
   }
 
@@ -41,11 +40,20 @@ class ChatService {
   getConnectionHandler() {
     /** @param {import('socket.io').Socket} socket */
     return (socket) => {
-      
+      // Enviamos las salas disponibles **solo**
+      // al socket que emitió el evento
+      socket.on('get available rooms', () => {
+        const rooms = this.roomModel.rooms;
+        socket.emit('available rooms', rooms);
+      })
+
+
       // Evento de unirse a una sala de chat
-      socket.on("join", (roomId) => {
+      socket.on("join", (roomId = 0) => {
+        // Si no se pasa ningún ID de sala,
+        // se une a la sala de ID 0
         const room = this.roomModel.findById(roomId);
-        if (!room) return;
+        if (roomId && !room) return;
         socket.join(roomId);
         this.server.emit(
           "all messages",
@@ -53,17 +61,23 @@ class ChatService {
         );
       });
 
+
+      // Evento de dejar una sala de chat
+      socket.on("leave", (roomId = 0) => {
+        socket.leave(roomId);
+      })
+
       // Eventos relacionados a la escritura de mensajes
-      socket.on("typing", (author) => {
-        socket.broadcast.emit("typing", author);
+      socket.on("typing", (author, roomId) => {
+        socket.broadcast.to(roomId).emit("typing", author);
       });
 
-      socket.on("quit typing", (author) => {
-        socket.broadcast.emit("quit typing", author);
+      socket.on("quit typing", (author, roomId = 0) => {
+        socket.broadcast.to(roomId).emit("quit typing", author, roomId);
       });
 
       // Evento de mensajes
-      socket.on("message", (data, roomId) => {
+      socket.on("message", (data, roomId = 0) => {
         const message = {
           author: data.author,
           message: data.message,
@@ -71,6 +85,8 @@ class ChatService {
         this.roomModel.sendToRoom(roomId, message);
         socket.broadcast.emit("message", message);
       });
+
+
 
       // Evento de disconexión
       socket.on("disconnect", (roomId) => {
@@ -82,13 +98,13 @@ class ChatService {
 
 /**
  * Retorna un nuevo servicio de chat con el servidor
- * HTTP especificado. 
- * 
- * @param {import('http').Server} httpServer 
+ * HTTP especificado.
+ *
+ * @param {import('http').Server} httpServer
  * @returns {ChatService}
  */
 
 export function chatServerFrom(httpServer) {
-    const io = new Server(httpServer);
-    return new ChatService(roomModel, io);
+  const io = new Server(httpServer);
+  return new ChatService(roomModel, io);
 }
