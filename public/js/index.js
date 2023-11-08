@@ -90,12 +90,13 @@ console.log(socket.on);
 socket.on("message", (data) => addMessage(data, false));
 
 function addMessage(data, self) {
+  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   messages.innerHTML += `
-        <li class="${self ? "self" : ""}">
+        <li class="${self ? "self" : ""}" >
             <span class="author">
                ${data.author}  
             </span>
-            ${data.message}
+            ${data.message}     ${time}
         </li> 
     `;
 }
