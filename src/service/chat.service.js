@@ -40,6 +40,14 @@ class ChatService {
   getConnectionHandler() {
     /** @param {import('socket.io').Socket} socket */
     return (socket) => {
+      // Enviamos las salas disponibles **solo**
+      // al socket que emitió el evento
+      socket.on('get available rooms', () => {
+        const rooms = this.roomModel.rooms;
+        socket.emit('available rooms', rooms);
+      })
+
+
       // Evento de unirse a una sala de chat
       socket.on("join", (roomId = 0) => {
         // Si no se pasa ningún ID de sala,
@@ -53,13 +61,19 @@ class ChatService {
         );
       });
 
+
+      // Evento de dejar una sala de chat
+      socket.on("leave", (roomId = 0) => {
+        socket.leave(roomId);
+      })
+
       // Eventos relacionados a la escritura de mensajes
-      socket.on("typing", (author) => {
-        socket.broadcast.emit("typing", author);
+      socket.on("typing", (author, roomId) => {
+        socket.broadcast.to(roomId).emit("typing", author);
       });
 
-      socket.on("quit typing", (author) => {
-        socket.broadcast.emit("quit typing", author);
+      socket.on("quit typing", (author, roomId = 0) => {
+        socket.broadcast.to(roomId).emit("quit typing", author, roomId);
       });
 
       // Evento de mensajes
@@ -71,6 +85,8 @@ class ChatService {
         this.roomModel.sendToRoom(roomId, message);
         socket.broadcast.emit("message", message);
       });
+
+
 
       // Evento de disconexión
       socket.on("disconnect", (roomId) => {
