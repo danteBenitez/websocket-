@@ -68,7 +68,7 @@ class ChatService {
       })
 
       // Eventos relacionados a la escritura de mensajes
-      socket.on("typing", (author, roomId) => {
+      socket.on("typing", (author, roomId = 0) => {
         socket.broadcast.to(roomId).emit("typing", author);
       });
 
